@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/Libraries/">
+    <Project Path="Libraries/Pulse.WebAuthn.Application/Pulse.WebAuthn.Application.csproj" />
+    <Project Path="Libraries/Pulse.WebAuthn.Domain/Pulse.WebAuthn.Domain.csproj" />
+  </Folder>
+  <Folder Name="/Presentation/">
+    <Project Path="Presentation/Pulse.Web/Pulse.Web.csproj" Id="ad769a36-4f8e-4cf5-9238-efa0b6e6eb84" />
+    <Project Path="Presentation/Pulse.WebApi/Pulse.WebApi.csproj" />
+  </Folder>
+</Solution>

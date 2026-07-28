@@ -1,0 +1,54 @@
+﻿@inherits LayoutComponentBase
+
+<FluentErrorBoundary>
+    <FluentLayout>
+        <FluentLayoutItem Area="@LayoutArea.Navigation">
+            <FluentStack Orientation="Orientation.Vertical" VerticalGap="15">
+                <FluentAppBar PopoverShowSearch="true" Style="background-color: inherit;">
+                    <FluentAppBarItem IconRest="@((new Icons.Regular.Size20.Home()))"
+                                      Text="Home"></FluentAppBarItem>
+                    <FluentAppBarItem IconRest="@((new Icons.Regular.Size20.Accessibility()))"
+                                      Text="Accessibity"></FluentAppBarItem>
+                    <FluentAppBarItem IconRest="@((new Icons.Regular.Size20.AddStarburst()))"
+                                      Text="Add starbust"></FluentAppBarItem>
+                    <FluentAppBarItem IconRest="@((new Icons.Regular.Size20.Sanitize()))"
+                                      Text="Sanitize"></FluentAppBarItem>
+                </FluentAppBar>
+                <FluentNav Width="260px" Style="background-color: inherit;">
+                    <FluentNavItem Href="/home"
+                                   Match="NavLinkMatch.All"
+                                   Style="background-color: inherit;"
+                                   IconRest="@((new Icons.Regular.Size20.Home()))">
+                        Home
+                    </FluentNavItem>
+                    <FluentNavItem Href="counter"
+                                   Match="NavLinkMatch.All"
+                                   Style="background-color: inherit;"
+                                   IconRest="@((new Icons.Regular.Size20.Counter()))">
+                        Counter
+                    </FluentNavItem>
+                    <FluentNavItem Href="weather"
+                                   Match="NavLinkMatch.All"
+                                   Style="background-color: inherit;"
+                                   IconRest="@((new Icons.Regular.Size20.TimeAndWeather()))">
+                        Weather
+                    </FluentNavItem>
+                </FluentNav>
+            </FluentStack>
+        </FluentLayoutItem>
+        <FluentLayoutItem Area="@LayoutArea.Content">
+            <FluentLayout>
+                <FluentLayoutItem Area="@LayoutArea.Header" Padding="0px" Sticky="true">
+                    <FluentStack Orientation="Orientation.Horizontal" HorizontalGap="15">
+                        <FluentText Weight="TextWeight.Bold"
+                                    Size="TextSize.Size300"
+                                    Margin="mt-5 pl-3">Pulse</FluentText>
+                    </FluentStack>
+                </FluentLayoutItem>
+                <FluentLayoutItem Area="@LayoutArea.Content">
+                    @Body
+                </FluentLayoutItem>
+            </FluentLayout>
+        </FluentLayoutItem>
+    </FluentLayout>
+</FluentErrorBoundary>

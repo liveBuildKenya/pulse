@@ -1,0 +1,201 @@
+﻿/* Center wrapper */
+.auth-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background: #f8fafc;
+    padding: 1rem;
+}
+
+/* Main Card */
+.auth-card {
+    display: flex;
+    flex-direction: row;
+    width: 900px;
+    max-width: 95%;
+    background: #fff;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0px 8px 30px rgba(0,0,0,0.1);
+}
+
+/* Left Section */
+.auth-left {
+    flex: 1;
+    background: #eef4f2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    text-align: center;
+}
+
+.hero-img {
+    width: 100%;
+    height: 100%;
+    max-height: 300px;
+    object-fit: cover; 
+    border-radius: 0; 
+    margin-bottom: 10px;
+}
+
+.promo-text h2.brand {
+    color: #667eea;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+}
+
+.promo-text h3 {
+    font-size: 1.3rem;
+    margin-bottom: 0.8rem;
+}
+
+.promo-text p {
+    font-size: 0.95rem;
+    color: #555;
+}
+
+/* Right Section */
+.auth-right {
+    flex: 1;
+    padding: 2.5rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+    .auth-right h1 {
+        text-align: center;
+        margin-bottom: 1.5rem;
+    }
+
+/* Social Buttons */
+.social-buttons {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 1.2rem;
+}
+
+.btn {
+    padding: 0.6rem 1rem;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    cursor: pointer;
+}
+
+.sso {
+    background: #444;
+    color: #fff;
+    flex: 1;
+    margin-right: 0.5rem;
+}
+
+.fb {
+    background: #3b5998;
+    color: #fff;
+    flex: 1;
+    margin-right: 0.5rem;
+}
+
+.google {
+    background: #fff;
+    border: 1px solid #ccc;
+    color: #333;
+    flex: 1;
+}
+
+/* Divider */
+.divider {
+    text-align: center;
+    margin: 1.5rem 0;
+    font-size: 0.85rem;
+    color: #888;
+    position: relative;
+}
+
+    .divider::before,
+    .divider::after {
+        content: "";
+        position: absolute;
+        width: 40%;
+        height: 1px;
+        background: #ddd;
+        top: 50%;
+    }
+
+    .divider::before {
+        left: 0;
+    }
+
+    .divider::after {
+        right: 0;
+    }
+
+/* Form */
+.form-group {
+    margin-bottom: 1rem;
+    display: flex;
+    flex-direction: column;
+}
+
+    .form-group label {
+        font-size: 0.9rem;
+        margin-bottom: 0.3rem;
+    }
+
+    .form-group input {
+        padding: 0.6rem;
+        border-radius: 6px;
+        border: 1px solid #ccc;
+    }
+
+.forgot-link {
+    font-size: 0.8rem;
+    color: #00b894;
+    text-decoration: none;
+    margin-top: 0.3rem;
+    display: inline-block;
+}
+
+.form-options {
+    margin: 1rem 0;
+    font-size: 0.85rem;
+}
+
+.btn.submit {
+    width: 100%;
+    background: #667eea;
+    color: #fff;
+    font-weight: 600;
+    margin-top: 0.5rem;
+}
+
+/* Footer */
+.signup-text {
+    text-align: center;
+    margin-top: 1.2rem;
+    font-size: 0.9rem;
+}
+
+    .signup-text a {
+        color: #667eea;
+        text-decoration: none;
+    }
+
+/* Responsive (mobile stacked) */
+@media (max-width: 768px) {
+    .auth-card {
+        flex-direction: column;
+    }
+
+    .auth-left {
+        padding: 1.5rem;
+    }
+
+    .auth-right {
+        padding: 1.5rem;
+    }
+}

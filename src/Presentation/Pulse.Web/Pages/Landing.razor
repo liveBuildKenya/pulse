@@ -1,0 +1,76 @@
+﻿@page "/"
+@inherits FluxorComponent
+@inject IState<WebAuthnState> WebAuthnState
+@inject IDispatcher Dispatcher
+
+<FluentLayout Padding="5rem">
+    <FluentStack Orientation="Orientation.Vertical" VerticalGap="3rem">
+        <FluentLayoutItem>
+            <FluentStack Orientation="Orientation.Vertical" VerticalGap="1rem">
+                <Logo></Logo>
+                <FluentText Size="TextSize.Size700">Guardion</FluentText>
+                <FluentText Size="TextSize.Size300">Identity Without Passwords. Trust Without Compromise.</FluentText>
+            </FluentStack>
+        </FluentLayoutItem>
+        <FluentLayoutItem Padding="2">
+            <FluentStack Orientation="Orientation.Vertical" VerticalGap="2rem">
+                <FluentStack Orientation="Orientation.Horizontal" HorizontalGap="1rem">
+                    <FluentText>Your device supports: </FluentText>
+                    @if (WebAuthnState.Value.ClientCapabilitiesModel is null)
+                    {
+                        <FluentText>Loading browser capablilities...</FluentText>
+                    }
+                    else
+                    {
+                        @if (WebAuthnState.Value.ClientCapabilitiesModel.PasskeyPlatformAuthenticator)
+                        {
+                            <FluentIcon Value="@(new Icons.Regular.Size20.Fingerprint())"
+                                        Tooltip="Fingerprint authentication" />
+                        }
+                        @if (WebAuthnState.Value.ClientCapabilitiesModel.UserVerifyingPlatformAuthenticator)
+                        {
+                            <FluentIcon Value="@(new Icons.Regular.Size20.ShieldPerson())"
+                                        Tooltip="Passkey (user‑verifying authenticator)" />
+                        }
+                        @if (WebAuthnState.Value.ClientCapabilitiesModel.ExtensionMinPinLength &&
+                             WebAuthnState.Value.ClientCapabilitiesModel.ExtensionCredentialProtectionPolicy)
+                        {
+                            <FluentIcon Value="@(new Icons.Regular.Size20.LockClosed())"
+                                        Tooltip="Device password / PIN" />
+                        }
+                        @if (WebAuthnState.Value.ClientCapabilitiesModel.ExtensionCrossDeviceFallbackUrl)
+                        {
+                            <FluentIcon Value="@(new Icons.Regular.Size20.QrCode())"
+                                        Tooltip="QR code login" />
+                        }
+                        @if (WebAuthnState.Value.ClientCapabilitiesModel.HybridTransport)
+                        {
+                            <FluentIcon Value="@(new Icons.Regular.Size20.PlugConnected())"
+                                        Tooltip="External authenticator (e.g. security key)" />
+                        }
+                    }
+                </FluentStack>
+                <FluentButton Size="ButtonSize.Medium"
+                              Label="Continue"
+                              OnClick="Continue"></FluentButton>
+            </FluentStack>
+
+        </FluentLayoutItem>
+    </FluentStack>
+</FluentLayout>
+
+@code{
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+
+        var action = new FetchClientCapabilitiesAction();
+        Dispatcher.Dispatch(action);
+    }
+
+    private void Continue()
+    {
+        Console.WriteLine("Here");
+    }
+}
