@@ -114,7 +114,6 @@ namespace Pulse.Web.WebAuthentication.Services
         public async Task<string> GetAssertionOptions(string username, string userVerification = null)
         {
             // Build the route to get options
-            // Build route
             var assertionOptionsRoute = _assertionOptionsRoute +
                 (string.IsNullOrEmpty(username) ? string.Empty : $"?{username}") +
                 (string.IsNullOrEmpty(userVerification) ? string.Empty : $"&{userVerification}");

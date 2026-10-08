@@ -25,7 +25,7 @@ namespace Pulse.Web
 
             builder.Services.AddScoped<WebAuthnApiService>();
             builder.Services.AddScoped<UserService>();
-            builder.Services.AddScoped<TemporaryStorage>();
+            builder.Services.AddSingleton<TemporaryStorage>();
             builder.Services.AddScoped<AssertionHandler>();
             builder.Services.AddFluentUIComponents();
             builder.Services.AddFluxor(configuration =>

@@ -84,10 +84,8 @@
 
     private async Task Continue()
     {
-        var assertionOptionsResponse = await UserService.GetAssertionOptions("example@example.com");
-
-
-        var assertionResponse = await UserService.MakeAssertion(JsonSerializer.Deserialize<AssertionOptions>(assertionOptionsResponse));
+        var assertionOptionsAction = new FetchWebAuthnAssertionOptionsAction("example@example.com", "");
+        Dispatcher.Dispatch(assertionOptionsAction);
 
     }
 }
