@@ -1,31 +1,39 @@
 export function getClientCapabilities() {
     const getCapabilities = window.PublicKeyCredential?.getClientCapabilities;
+
     return typeof getCapabilities === "function"
         ? getCapabilities.call(window.PublicKeyCredential)
         : {};
 }
-function toBase64Url(arrayBuffer) {
-    return btoa(String.fromCharCode(...new Uint8Array(arrayBuffer))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=*$/g, "");
+
+function toBase64Url(arrayBuffer: ArrayBuffer | ArrayBufferView): string {
+    const bytes = arrayBuffer instanceof ArrayBuffer ? new Uint8Array(arrayBuffer) : new Uint8Array(arrayBuffer.buffer, arrayBuffer.byteOffset, arrayBuffer.byteLength);
+    return btoa(String.fromCharCode(...bytes)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=*$/g, "");
 }
-function fromBase64Url(value) {
-    return Uint8Array.from(atob(value.replace(/-/g, "+").replace(/_/g, "/")), c => c.charCodeAt(0));
+function fromBase64Url(value: string): ArrayBuffer {
+    const binary = atob(value.replace(/-/g, "+").replace(/_/g, "/"));
+    const len = binary.length;
+    const bytes = new Uint8Array(len);
+    for (let i = 0; i < len; i++) bytes[i] = binary.charCodeAt(i);
+    return bytes.buffer;
 }
-function base64StringToUrl(base64String) {
+function base64StringToUrl(base64String: string): string {
     return base64String.replace(/\+/g, "-").replace(/\//g, "_").replace(/=*$/g, "");
 }
-export async function createCreds(options) {
+
+export async function createCreds(options: PublicKeyCredentialCreationOptions) {
     if (typeof options.challenge === 'string')
         options.challenge = fromBase64Url(options.challenge);
     if (typeof options.user.id === 'string')
         options.user.id = fromBase64Url(options.user.id);
-    if (options.rp.id === null)
+    if (options.rp && options.rp.id === null)
         options.rp.id = undefined;
-    for (let cred of options.excludeCredentials) {
+    for (let cred of options.excludeCredentials || []) {
         if (typeof cred.id === 'string')
             cred.id = fromBase64Url(cred.id);
     }
-    var newCreds = await navigator.credentials.create({ publicKey: options });
-    const response = newCreds.response;
+    var newCreds = await navigator.credentials.create({ publicKey: options }) as PublicKeyCredential;
+    const response = newCreds.response as AuthenticatorAttestationResponse;
     const retval = {
         id: base64StringToUrl(newCreds.id),
         rawId: toBase64Url(newCreds.rawId),
@@ -39,7 +47,8 @@ export async function createCreds(options) {
     };
     return retval;
 }
-export async function verify(options) {
+
+export async function verify(options: PublicKeyCredentialRequestOptions) {
     if (typeof options.challenge === 'string')
         options.challenge = fromBase64Url(options.challenge);
     if (options.allowCredentials) {
@@ -49,8 +58,8 @@ export async function verify(options) {
                 options.allowCredentials[i].id = fromBase64Url(id);
         }
     }
-    var creds = await navigator.credentials.get({ publicKey: options });
-    const response = creds.response;
+    var creds = await navigator.credentials.get({ publicKey: options }) as PublicKeyCredential;
+    const response = creds.response as AuthenticatorAssertionResponse;
     const retval = {
         id: creds.id,
         rawId: toBase64Url(creds.rawId),
@@ -62,7 +71,6 @@ export async function verify(options) {
             userHandle: response.userHandle && response.userHandle.byteLength > 0 ? toBase64Url(response.userHandle) : undefined,
             signature: toBase64Url(response.signature)
         }
-    };
+    }
     return retval;
 }
-//# sourceMappingURL=WebAuthentication.js.map

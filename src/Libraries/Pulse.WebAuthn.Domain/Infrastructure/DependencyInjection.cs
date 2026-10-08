@@ -1,9 +1,11 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using FluentMigrator.Runner;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Pulse.WebAuthn.Domain.Credentials.Services;
 using Pulse.WebAuthn.Domain.Customers.Services;
 using Pulse.WebAuthn.Domain.Infrastructure.Data;
+using Pulse.WebAuthn.Domain.Migrations;
 
 namespace Pulse.WebAuthn.Domain.Infrastructure
 {
@@ -16,11 +18,22 @@ namespace Pulse.WebAuthn.Domain.Infrastructure
         {
             serviceCollection.AddScoped(typeof(IRepository<>), typeof(EntityRepository<>));
 
-            //serviceCollection.AddDbContext<ILiveDataProvider, LiveDataProvider>(contextOptions => contextOptions
-            //.UseNpgsql(configuration.GetConnectionString("MagicAuth")));
+            serviceCollection.AddDbContext<ILiveDataProvider, LiveDataProvider>(contextOptions => contextOptions
+                .UseNpgsql(configuration.GetConnectionString("MagicAuth")));
 
             serviceCollection.AddTransient<ICustomerService, CustomerService>();
             serviceCollection.AddTransient<ICredentialService, CredentialService>();
+        }
+
+        public static void AddMigrations(this IServiceCollection serviceCollection, string connectionString)
+        {
+            serviceCollection.AddFluentMigratorCore()
+                .ConfigureRunner(runnerBuilder => runnerBuilder
+                    .AddPostgres()
+                    .WithGlobalConnectionString(connectionString)
+                    .ScanIn(typeof(InitialMigration).Assembly).For.Migrations())
+                .AddLogging(loggingBuilder => loggingBuilder.AddFluentMigratorConsole())
+                .BuildServiceProvider(false);
         }
     }
 }

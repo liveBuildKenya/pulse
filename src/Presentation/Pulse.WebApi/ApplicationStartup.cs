@@ -1,15 +1,16 @@
 ﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Pulse.WebApi.Assertion;
 using Pulse.WebApi.Attestation;
 using Pulse.WebAuthn.Application.Infrastructure;
+using Pulse.WebAuthn.Domain.Infrastructure.Migrations;
 using Scalar.AspNetCore;
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace Pulse.WebApi
 {
@@ -42,13 +43,15 @@ namespace Pulse.WebApi
         /// Configures the application services to the service container
         /// </summary>
         /// <param name="serviceCollection">Service container</param>
+        [Obsolete]
         public void ConfigureServices(IServiceCollection serviceCollection)
         {
             serviceCollection.AddHttpContextAccessor();
-            serviceCollection.AddRazorPages();
+            serviceCollection.AddOpenApi();
             serviceCollection.AddMagicAuthApplicationServices(Configuration);
 
-            var origins = new[] { "https://localhost:7286", "https://localhost:44368/", "http://localhost:5166" };
+
+            var origins = new[] { "https://localhost:7076" };
             var originsHashSet = new HashSet<string>(origins);
 
             serviceCollection.AddFido2(options =>
@@ -60,11 +63,17 @@ namespace Pulse.WebApi
                 options.MDSCacheDirPath = "";
             });
 
-            serviceCollection.AddSession(options =>
+            serviceCollection.AddDistributedMemoryCache();
+
+            // Allow the Blazor WebAssembly client origin and allow credentials (cookies)
+            serviceCollection.AddCors(options =>
             {
-                options.IdleTimeout = TimeSpan.FromMinutes(2);
-                options.Cookie.HttpOnly = true;
-                options.Cookie.SameSite = SameSiteMode.Unspecified;
+                options.AddPolicy("AllowClient", builder =>
+                    builder.WithOrigins(origins)
+                           .AllowAnyHeader()
+                           .AllowAnyMethod()
+                           .AllowCredentials()
+                           .WithExposedHeaders("X-Assertion-Options-Key"));
             });
         }
 
@@ -79,17 +88,27 @@ namespace Pulse.WebApi
             {
                 applicationBuilder.UseDeveloperExceptionPage();
             }
-            //applicationBuilder.RunMigrations(Configuration.GetConnectionString("MagicAuth"));
+            using (var scope = applicationBuilder.ApplicationServices.CreateScope())
+            {
+                MigrationExtensions.RunMigrations(scope.ServiceProvider);
+            }
             applicationBuilder.UseHttpsRedirection();
-            applicationBuilder.UseSession();
-            applicationBuilder.UseStaticFiles();
             applicationBuilder.UseRouting();
+            // Apply CORS policy before endpoints so cross-origin requests from the SPA are allowed
+            applicationBuilder.UseCors("AllowClient");
             applicationBuilder.UseEndpoints(endpoints =>
             {
-                endpoints.MapRazorPages();
                 endpoints.MapAttestationRoutes();
                 endpoints.MapAssertionRoutes();
+                endpoints.MapOpenApi();
                 endpoints.MapScalarApiReference();
+
+                // Redirect root "/" to Scalar
+                endpoints.MapGet("/", context =>
+                {
+                    context.Response.Redirect("/scalar", permanent: false);
+                    return Task.CompletedTask;
+                });
             });
         }
 

@@ -1,9 +1,10 @@
-﻿using Fido2NetLib;
+using Fido2NetLib;
 using Fido2NetLib.Objects;
 using Microsoft.AspNetCore.Http;
 using Pulse.WebAuthn.Application.Attestation.Models;
 using Pulse.WebAuthn.Application.Credentials;
 using Pulse.WebAuthn.Application.Customers;
+using Pulse.WebAuthn.Domain.Credentials;
 using System.Text;
 
 namespace Pulse.WebAuthn.Application.Attestation.Services
@@ -47,17 +48,26 @@ namespace Pulse.WebAuthn.Application.Attestation.Services
         public IResult MakeAttestationOptions(AttestationOptionsRequestModel attestationOptionsRequestModel)
         {
             var created = DateTime.UtcNow;
-            var username = $"User Created at {created}";
+            var username = attestationOptionsRequestModel.Username;
+
+            if (string.IsNullOrEmpty(username))
+            {
+                username = $"Usernameless created at {created}";
+            }
+
+            var customerModel = customerFactory.GetCustomerWithCredentials(username);
 
             //Create a new Fido2User object
-            var user = new Fido2User
+            var fidoUser = new Fido2User
             {
                 DisplayName = "",
-                Name = username,
-                Id = Encoding.UTF8.GetBytes(username)
+                Name = customerModel.Customer.Name,
+                Id = Encoding.UTF8.GetBytes(customerModel.Customer.Name)
             };
+
             //Get the users existing keys by username
-            var existingKeys = new List<PublicKeyCredentialDescriptor>();
+            var existingKeys = credentialFactory.BuildPublicKeyCredentialDescriptors(customerModel.Credentials);
+
             //Create options
             var authenticatorSelection = AuthenticatorSelection.Default;
             if (attestationOptionsRequestModel.AuthenticatorAttachment != null)
@@ -67,10 +77,18 @@ namespace Pulse.WebAuthn.Application.Attestation.Services
 
             if (attestationOptionsRequestModel.UserVerificationRequirement != null)
             {
+                authenticatorSelection.UserVerification = attestationOptionsRequestModel.UserVerificationRequirement.Value;
+            }
+            else
+            {
                 authenticatorSelection.UserVerification = UserVerificationRequirement.Preferred;
             }
 
             if (attestationOptionsRequestModel.ResidentKeyRequirement != null)
+            {
+                authenticatorSelection.ResidentKey = attestationOptionsRequestModel.ResidentKeyRequirement.Value;
+            }
+            else
             {
                 authenticatorSelection.ResidentKey = ResidentKeyRequirement.Preferred;
             }
@@ -78,7 +96,7 @@ namespace Pulse.WebAuthn.Application.Attestation.Services
             // 4. Create options
             var options = fido2.RequestNewCredential(new RequestNewCredentialParams
             {
-                User = user,
+                User = fidoUser,
                 ExcludeCredentials = existingKeys,
                 AuthenticatorSelection = authenticatorSelection,
                 AttestationPreference = attestationOptionsRequestModel.AttestationConveyancePreference ?? AttestationConveyancePreference.None,
@@ -91,7 +109,7 @@ namespace Pulse.WebAuthn.Application.Attestation.Services
             });
 
             //Store the options temporarily
-            httpContextAccessor.HttpContext.Session.SetString("fido2.attestationOptions", options.ToString());
+            httpContextAccessor.HttpContext?.Session?.SetString("fido2.attestationOptions", options.ToString());
 
             return Results.Ok(options);
         }
@@ -104,29 +122,45 @@ namespace Pulse.WebAuthn.Application.Attestation.Services
         /// <returns>Attestation Result</returns>
         public async Task<IResult> MakeAttestation(AuthenticatorAttestationRawResponse authenticatorAttestationRawResponse, CancellationToken cancellationToken)
         {
-            var jsonOptions = httpContextAccessor.HttpContext.Session.GetString("fido2.attestationOptions");
-            var options = CredentialCreateOptions.FromJson(jsonOptions);
-            //Create callback to check if the credential is unique to the customer
-            IsCredentialIdUniqueToUserAsyncDelegate callback = async (args, cancellationToken) =>
+            var jsonOptions = httpContextAccessor.HttpContext?.Session?.GetString("fido2.attestationOptions");
+            if (string.IsNullOrEmpty(jsonOptions))
             {
-                var response = await credentialFactory.IsCredentialUniqueToCustomer(args.CredentialId);
-                return response;
+                return Results.BadRequest(new { message = "Attestation options expired or not found in session." });
+            }
+
+            var options = CredentialCreateOptions.FromJson(jsonOptions);
+
+            var makeNewCredentialsParams = new MakeNewCredentialParams
+            {
+                AttestationResponse = authenticatorAttestationRawResponse,
+                IsCredentialIdUniqueToUserCallback = CredentialIdUniqueToUserAsync,
+                OriginalOptions = options
             };
-            //Request for a new credential
-            //var success = await fido2.MakeNewCredentialAsync(authenticatorAttestationRawResponse, options, callback, cancellationToken: cancellationToken);
 
-            //var storedCredential = credentialFactory.InsertCredential(options.User, new StoredCredential
-            //{
-            //    Descriptor = new PublicKeyCredentialDescriptor(success.Result.CredentialId),
-            //    PublicKey = success.Result.PublicKey,
-            //    UserHandle = success.Result.User.Id,
-            //    SignatureCounter = success.Result.Counter,
-            //    CredType = success.Result.CredType,
-            //    RegDate = DateTime.UtcNow,
-            //    AaGuid = success.Result.Aaguid
-            //});
+            var registeredPublicKeyCredential = await fido2.MakeNewCredentialAsync(makeNewCredentialsParams, cancellationToken: cancellationToken);
 
-            return Results.Ok(callback);
+            var credential = credentialFactory.InsertCredential(options.User, new Credential
+            {
+                AttestationFormat = registeredPublicKeyCredential.AttestationFormat,
+                Id = registeredPublicKeyCredential.Id,
+                PublicKey = registeredPublicKeyCredential.PublicKey,
+                UserHandle = registeredPublicKeyCredential.User.Id,
+                SignCount = registeredPublicKeyCredential.SignCount,
+                RegDate = DateTime.UtcNow,
+                AaGuid = registeredPublicKeyCredential.AaGuid,
+                Transports = registeredPublicKeyCredential.Transports,
+                IsBackupEligible = registeredPublicKeyCredential.IsBackupEligible,
+                IsBackedUp = registeredPublicKeyCredential.IsBackedUp,
+                AttestationObject = registeredPublicKeyCredential.AttestationObject,
+                AttestationClientDataJson = registeredPublicKeyCredential.AttestationClientDataJson,
+            });
+
+            return Results.Ok();
+        }
+
+        private async Task<bool> CredentialIdUniqueToUserAsync(IsCredentialIdUniqueToUserParams args, CancellationToken cancellationToken)
+        {
+            return await credentialFactory.IsCredentialUniqueToCustomer(args.CredentialId);
         }
 
         #endregion

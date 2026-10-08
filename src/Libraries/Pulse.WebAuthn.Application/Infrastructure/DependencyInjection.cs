@@ -23,7 +23,7 @@ namespace Pulse.WebAuthn.Application.Infrastructure
             serviceCollection.AddTransient<IAttestationUseCase, AttestationUseCase>();
             serviceCollection.AddTransient<IAssertionUseCase, AssertionUseCase>();
 
-            //serviceCollection.AddMagicAuthMigrations(configuration.GetConnectionString("MagicAuth"));
+            serviceCollection.AddMigrations(configuration.GetConnectionString("MagicAuth"));
         }
     }
 }

@@ -2,6 +2,7 @@
 @inherits FluxorComponent
 @inject IState<WebAuthnState> WebAuthnState
 @inject IDispatcher Dispatcher
+@inject UserService UserService
 
 <FluentLayout Padding="5rem">
     <FluentStack Orientation="Orientation.Vertical" VerticalGap="3rem">
@@ -53,6 +54,18 @@
                 <FluentButton Size="ButtonSize.Medium"
                               Label="Continue"
                               OnClick="Continue"></FluentButton>
+@*                 @if (showRegister)
+                {
+                    <FluentStack Orientation="Orientation.Vertical" VerticalGap="1rem" Padding="1rem">
+                        <FluentText>We couldn't find a matching passkey — register a passkey for a verifiable email to continue passwordless.</FluentText>
+                        <input placeholder="Email address" @bind="email" />
+                        <FluentButton Size="ButtonSize.Small" Label="Register" OnClick="Register"></FluentButton>
+                        @if (!string.IsNullOrEmpty(statusMessage))
+                        {
+                            <FluentText>@statusMessage</FluentText>
+                        }
+                    </FluentStack>
+                } *@
             </FluentStack>
 
         </FluentLayoutItem>
@@ -69,8 +82,12 @@
         Dispatcher.Dispatch(action);
     }
 
-    private void Continue()
+    private async Task Continue()
     {
-        Console.WriteLine("Here");
+        var assertionOptionsResponse = await UserService.GetAssertionOptions("example@example.com");
+
+
+        var assertionResponse = await UserService.MakeAssertion(JsonSerializer.Deserialize<AssertionOptions>(assertionOptionsResponse));
+
     }
 }

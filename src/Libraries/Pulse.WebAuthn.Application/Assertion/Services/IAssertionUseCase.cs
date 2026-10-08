@@ -14,7 +14,7 @@ namespace Pulse.WebAuthn.Application.Assertion.Services
         /// </summary>
         /// <param name="assertionOptionsRequestModel">Assertion options request model</param>
         /// <returns>Assertion options</returns>
-        IResult MakeAssertionOptions(AssertionOptionsRequestModel assertionOptionsRequestModel);
+        Task<IResult> MakeAssertionOptions(AssertionOptionsRequestModel assertionOptionsRequestModel);
 
         /// <summary>
         /// Makes an assertion based on the provided authenticator assertion raw response.

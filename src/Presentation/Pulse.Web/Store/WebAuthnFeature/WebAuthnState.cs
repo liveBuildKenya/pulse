@@ -12,4 +12,11 @@ namespace Pulse.Web.Store.WebAuthnFeature
         public bool IsLoading { get; set; }
         public ClientCapabilitiesModel ClientCapabilitiesModel { get; init; }
     }
+
+    [FeatureState]
+    public record AssertionOptionsKeyState
+    {
+        public bool IsLoading { get; set; }
+        public string AssertionOptionsKey { get; init; }
+    }
 }

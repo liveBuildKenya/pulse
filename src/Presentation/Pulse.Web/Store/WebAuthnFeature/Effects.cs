@@ -7,7 +7,8 @@ namespace Pulse.Web.Store.WebAuthnFeature
     {
         private readonly WebAuthnApiService _webAuthnApi;
 
-        public Effects(WebAuthnApiService webAuthnApi)
+        public Effects(WebAuthnApiService webAuthnApi,
+                       UserService userService)
         {
             _webAuthnApi = webAuthnApi;
         }

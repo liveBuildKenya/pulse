@@ -1,6 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
-using Pulse.WebAuthn.Domain.Infrastructure.Data;
-using Pulse.WebAuthn.Domain.Shared.Utilities;
+﻿using Pulse.WebAuthn.Domain.Infrastructure.Data;
 
 namespace Pulse.WebAuthn.Domain.Credentials.Services
 {
@@ -28,11 +26,9 @@ namespace Pulse.WebAuthn.Domain.Credentials.Services
 
         public List<Credential> GetCredentialsByCredentialId(byte[] credentialId)
         {
-            var base64Id = Helpers.Base64UrlEncode(credentialId);
-            var jsonFragment = $@"{{""id"":""{base64Id}""}}";
 
             return (from credential in credentialRepository.Table
-                    where EF.Functions.JsonContains(credential.Descriptor, jsonFragment)
+                    where credential.Id == credentialId
                     select credential)
                     .ToList();
         }

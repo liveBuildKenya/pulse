@@ -14,8 +14,6 @@ namespace Pulse.WebAuthn.Domain.Credentials
 
             builder.HasKey(credential => credential.RegDate);
 
-            builder.Property(credential => credential.Descriptor)
-                .HasColumnType("jsonb");
         }
     }
 }

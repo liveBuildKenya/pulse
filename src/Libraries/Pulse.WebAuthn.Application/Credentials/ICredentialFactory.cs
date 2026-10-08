@@ -1,4 +1,5 @@
-﻿using Fido2NetLib.Objects;
+﻿using Fido2NetLib;
+using Fido2NetLib.Objects;
 using Pulse.WebAuthn.Domain.Credentials;
 
 namespace Pulse.WebAuthn.Application.Credentials
@@ -36,9 +37,9 @@ namespace Pulse.WebAuthn.Application.Credentials
         /// <param name="user">Fido User</param>
         /// <param name="credential">Credential</param>
         /// <returns>Stored Credential</returns>
-        //StoredCredential InsertCredential(Fido2User user, StoredCredential credential);
+        Credential InsertCredential(Fido2User user, Credential credential);
 
-        (PublicKeyCredentialDescriptor descriptor, uint signatureCount, byte[] pubKey) GetCredentialByCredentialIdAndSignatureCount(byte[] credentialId);
+        (PublicKeyCredentialDescriptor descriptor, uint signatureCount, byte[] pubKey) GetCredentialByCredentialId(byte[] credentialId);
         void UpdateCounter(byte[] credentialId, uint counter);
     }
 }

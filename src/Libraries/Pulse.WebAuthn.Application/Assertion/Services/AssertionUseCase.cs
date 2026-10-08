@@ -1,10 +1,10 @@
-﻿using Fido2NetLib;
+using Fido2NetLib;
 using Fido2NetLib.Objects;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Caching.Distributed;
 using Pulse.WebAuthn.Application.Assertion.Models;
 using Pulse.WebAuthn.Application.Credentials;
 using Pulse.WebAuthn.Application.Customers;
-using Pulse.WebAuthn.Application.Shared;
 using System.Text.Json;
 
 namespace Pulse.WebAuthn.Application.Assertion.Services
@@ -20,6 +20,8 @@ namespace Pulse.WebAuthn.Application.Assertion.Services
         private readonly ICredentialFactory credentialFactory;
         private readonly IFido2 fido2;
         private readonly IHttpContextAccessor httpContextAccessor;
+        private readonly IDistributedCache distributedCache;
+        private string assertionOptionsKey = "fido2.assertionOptions";
 
         #endregion
 
@@ -28,12 +30,14 @@ namespace Pulse.WebAuthn.Application.Assertion.Services
         public AssertionUseCase(ICustomerFactory customerFactory,
             ICredentialFactory credentialFactory,
             IFido2 fido2,
-            IHttpContextAccessor httpContextAccessor)
+            IHttpContextAccessor httpContextAccessor,
+            IDistributedCache distributedCache)
         {
             this.customerFactory = customerFactory;
             this.credentialFactory = credentialFactory;
             this.fido2 = fido2;
             this.httpContextAccessor = httpContextAccessor;
+            this.distributedCache = distributedCache;
         }
 
         #endregion
@@ -46,23 +50,45 @@ namespace Pulse.WebAuthn.Application.Assertion.Services
         /// <param name="assertionOptionsRequestModel">Assertion options request modlel</param>
         /// <returns>Assertion options</returns>
         /// <exception cref="ArgumentException"></exception>
-        public IResult MakeAssertionOptions(AssertionOptionsRequestModel assertionOptionsRequestModel)
+        public async Task<IResult> MakeAssertionOptions(AssertionOptionsRequestModel assertionOptionsRequestModel)
         {
-            var extensions = new AuthenticationExtensionsClientInputs()
+            var existingKeys = new List<PublicKeyCredentialDescriptor>();
+
+            if (string.IsNullOrEmpty(assertionOptionsRequestModel.Username))
             {
+                assertionOptionsKey = assertionOptionsKey + $".{Guid.NewGuid()}";
+            }
+
+            if (!string.IsNullOrEmpty(assertionOptionsRequestModel.Username))
+            {
+                var user = customerFactory.GetCustomerWithCredentials(assertionOptionsRequestModel.Username);
+
+                existingKeys = credentialFactory.BuildPublicKeyCredentialDescriptors(user.Credentials);
+
+                assertionOptionsKey = assertionOptionsKey + "." + user.Customer.Name;
+            }
+
+            var authenticationExtensionsClientInputs = new AuthenticationExtensionsClientInputs()
+            {
+                Extensions = true,
                 UserVerificationMethod = true,
             };
 
             var assertionOptionsParams = new GetAssertionOptionsParams
             {
-                AllowedCredentials = null,
-                Extensions = extensions,
+                AllowedCredentials = existingKeys,
+                Extensions = authenticationExtensionsClientInputs,
                 UserVerification = UserVerificationRequirement.Preferred
             };
 
             var options = fido2.GetAssertionOptions(assertionOptionsParams);
 
-            httpContextAccessor.HttpContext.Session.SetString("fido2.assertionOptions", options.ToJson());
+            await distributedCache.SetStringAsync(assertionOptionsKey, JsonSerializer.Serialize(options), new DistributedCacheEntryOptions
+            {
+                AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5)
+            });
+
+            httpContextAccessor.HttpContext.Response.Headers.TryAdd("X-Assertion-Options-Key", assertionOptionsKey);
 
             return Results.Ok(options);
         }
@@ -75,17 +101,30 @@ namespace Pulse.WebAuthn.Application.Assertion.Services
         /// <returns>Assertion result</returns>
         public async Task<IResult> MakeAssertion(AuthenticatorAssertionRawResponse authenticatorAssertionRawResponse, CancellationToken cancellationToken)
         {
-            var options = AssertionOptions.FromJson(httpContextAccessor.HttpContext.Session.GetString("fido2.assertionOptions"));
+            var assertionOptionsKey = httpContextAccessor.HttpContext.Request.Headers["X-Assertion-Options-Key"].ToString();
+            var sessionJson = await distributedCache.GetStringAsync(assertionOptionsKey, cancellationToken);
+
+            if (string.IsNullOrEmpty(sessionJson))
+            {
+                return Results.BadRequest(new { message = "Assertion options expired or not found in session." });
+            }
+
+            var options = AssertionOptions.FromJson(sessionJson);
 
             var authenticatorResponse = JsonSerializer.Deserialize<AuthenticatorResponse>(authenticatorAssertionRawResponse.Response.ClientDataJson);
 
-            //TODO: Get Credentials in db
+            var credential = credentialFactory.GetCredentialByCredentialId(authenticatorAssertionRawResponse.RawId);
+            if (credential.pubKey == null || credential.descriptor == null)
+            {
+                return Results.NotFound(new { message = "Credential not found in relying party." });
+            }
+
             var makeAssertionParams = new MakeAssertionParams
             {
                 AssertionResponse = authenticatorAssertionRawResponse,
                 OriginalOptions = options,
-                StoredPublicKey = null, // would be the stored public key
-                StoredSignatureCounter = 0, //would be the stored signed count
+                StoredPublicKey = credential.pubKey,
+                StoredSignatureCounter = credential.signatureCount,
                 IsUserHandleOwnerOfCredentialIdCallback = UserHandleOwnerOfCredentialIdAsync
             };
 
@@ -93,14 +132,12 @@ namespace Pulse.WebAuthn.Application.Assertion.Services
 
             //TODO: Handle JWT
 
-            return Results.Ok(options);
+            return Results.Ok(response);
         }
 
-        private static async Task<bool> UserHandleOwnerOfCredentialIdAsync(IsUserHandleOwnerOfCredentialIdParams args, CancellationToken cancellationToken)
+        private async Task<bool> UserHandleOwnerOfCredentialIdAsync(IsUserHandleOwnerOfCredentialIdParams args, CancellationToken cancellationToken)
         {
-            //var storedCreds = await _demoStorage.GetCredentialsByUserHandleAsync(args.UserHandle, cancellationToken);
-            //return storedCreds.Exists(c => c.Descriptor.Id.SequenceEqual(args.CredentialId));
-            return false;
+            return await credentialFactory.IsUserHandleOwnerOfCredentialId(args.CredentialId, args.UserHandle);
         }
 
         #endregion

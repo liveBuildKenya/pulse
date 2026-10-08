@@ -17,9 +17,9 @@ namespace Pulse.WebApi.Assertion
         public static void MapAssertionRoutes(this IEndpointRouteBuilder endpointRouteBuilder)
         {
             var tag = "Assertion";
-            endpointRouteBuilder.MapGet("/assertion/option", ([FromServices] IAssertionUseCase assertionUseCase,
-                [FromQuery] string username,
-                [FromQuery] string userVerification) => assertionUseCase.MakeAssertionOptions(new AssertionOptionsRequestModel { Username = username, UserVerification = userVerification }))
+            endpointRouteBuilder.MapGet("/assertion/options", ([FromQuery] string username,
+                [FromQuery] string userVerification,
+                [FromServices] IAssertionUseCase assertionUseCase) => assertionUseCase.MakeAssertionOptions(new AssertionOptionsRequestModel { Username = username, UserVerification = userVerification }))
                 .WithTags(tag);
 
             endpointRouteBuilder.MapPost("/assertion", async ([FromServices] IAssertionUseCase assertionUseCase,

@@ -1,4 +1,5 @@
-﻿using Microsoft.JSInterop;
+﻿using Fido2NetLib;
+using Microsoft.JSInterop;
 using Pulse.Web.WebAuthentication.Models;
 
 namespace Pulse.Web.WebAuthentication.Services
@@ -20,11 +21,21 @@ namespace Pulse.Web.WebAuthentication.Services
         public Task Initialize() => _initializer;
 
         public async Task<ClientCapabilitiesModel> GetClientCapabilitiesAsync() => await _jsObjectReference.InvokeAsync<ClientCapabilitiesModel>("getClientCapabilities");
-    }
 
-    public static class DependencyInjection
-    {
-        public static IServiceCollection AddWebAuthnApi(this IServiceCollection serviceCollection) =>
-            serviceCollection.AddSingleton<WebAuthnApiService>();
+        /// <summary>
+        /// Creates a new credential.
+        /// </summary>
+        /// <param name="options"></param>
+        /// <returns></returns>
+        public async Task<AuthenticatorAttestationRawResponse> CreateCredsAsync(CredentialCreateOptions options) =>
+            await _jsObjectReference.InvokeAsync<AuthenticatorAttestationRawResponse>("createCreds", options);
+
+        /// <summary>
+        /// Verifies a credential for login.
+        /// </summary>
+        /// <param name="options"></param>
+        /// <returns></returns>
+        public async Task<AuthenticatorAssertionRawResponse> VerifyAsync(AssertionOptions options) =>
+            await _jsObjectReference.InvokeAsync<AuthenticatorAssertionRawResponse>("verify", options);
     }
 }

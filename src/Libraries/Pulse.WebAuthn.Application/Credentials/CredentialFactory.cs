@@ -1,7 +1,9 @@
-﻿using Fido2NetLib.Objects;
+using Fido2NetLib;
+using Fido2NetLib.Objects;
 using Pulse.WebAuthn.Domain.Credentials;
 using Pulse.WebAuthn.Domain.Credentials.Services;
-using System.Text.Json;
+using Pulse.WebAuthn.Domain.Customers;
+using Pulse.WebAuthn.Domain.Customers.Services;
 
 namespace Pulse.WebAuthn.Application.Credentials
 {
@@ -12,15 +14,18 @@ namespace Pulse.WebAuthn.Application.Credentials
     {
         #region Fields
 
-        private readonly ICredentialService credentialService;
+        private readonly ICredentialService _credentialService;
+        private readonly ICustomerService _customerService;
 
         #endregion
 
         #region Constructors
 
-        public CredentialFactory(ICredentialService credentialService)
+        public CredentialFactory(ICredentialService credentialService,
+            ICustomerService customerService)
         {
-            this.credentialService = credentialService;
+            _credentialService = credentialService;
+            _customerService = customerService;
         }
 
         #endregion
@@ -38,7 +43,7 @@ namespace Pulse.WebAuthn.Application.Credentials
             foreach (var credential in credentials)
             {
                 // Deserialize the descriptor from the credential descrtiptor string
-                var descriptor = JsonSerializer.Deserialize<PublicKeyCredentialDescriptor>(credential.Descriptor);
+                var descriptor = credential.Descriptor;
 
                 if (descriptor is not null)
                     publicKeyCredentialDescriptors.Add(descriptor);
@@ -47,74 +52,73 @@ namespace Pulse.WebAuthn.Application.Credentials
             return publicKeyCredentialDescriptors;
         }
 
-        public (PublicKeyCredentialDescriptor descriptor, uint signatureCount, byte[] pubKey) GetCredentialByCredentialIdAndSignatureCount(byte[] credentialId)
+        public (PublicKeyCredentialDescriptor descriptor, uint signatureCount, byte[] pubKey) GetCredentialByCredentialId(byte[] credentialId)
         {
-            var credentials = credentialService.GetCredentialsByCredentialId(credentialId);
+            var credentials = _credentialService.GetCredentialsByCredentialId(credentialId);
             var credential = credentials.FirstOrDefault();
+
+            if (credential == null)
+            {
+                return (null!, 0, null!);
+            }
 
             var publicKeyCredentialDescriptor = BuildPublicKeyCredentialDescriptors(credentials).FirstOrDefault();
 
+            return (publicKeyCredentialDescriptor, credential.SignCount, credential.PublicKey);
+        }
 
-            return (publicKeyCredentialDescriptor, credential.SignatureCounter, credential.PublicKey);
+        public Task<List<Customer>> GetUsersByCredentialId(byte[] credentialId, CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
         }
 
         /// <summary>
         /// Inserts a credential to storage.
         /// </summary>
-        /// <param name="user">User</param>
-        /// <param name="storedCredential">Credential</param>
+        /// <param name = "user" > User </ param >
+        /// < param name="credential">Credential</param>
         /// <returns>Stored Credential</returns>
-        //public StoredCredential InsertCredential(Fido2User user, StoredCredential storedCredential)
-        //{
-        //    var credential = new Credential
-        //    {
-        //        UserHandle = storedCredential.UserHandle,
-        //        PublicKey = storedCredential.PublicKey,
-        //        Descriptor = JsonSerializer.Serialize(storedCredential.Descriptor),
-        //        AaGuid = storedCredential.AaGuid,
-        //        CredType = storedCredential.CredType,
-        //        CustomerId = user.Id,
-        //        RegDate = storedCredential.RegDate,
-        //        SignatureCounter = storedCredential.SignatureCounter
-        //    };
+        public Credential InsertCredential(Fido2User user, Credential credential)
+        {
+            var customer = _customerService.GetCustomerByName(user.Name);
+            credential.CustomerId = customer.Id;
 
-        //    credentialService.InsertCredential(credential);
+            _credentialService.InsertCredential(credential);
 
-        //    return storedCredential;
-        //}
+            return credential;
+        }
 
         /// <summary>
         /// Checks if a credential is unique to a customer.
         /// </summary>
         /// <param name="credentialId">Credential identifier</param>
         /// <returns>True, if unique false otherwise</returns>
-        public Task<bool> IsCredentialUniqueToCustomer(byte[] credentialId)
+        public async Task<bool> IsCredentialUniqueToCustomer(byte[] credentialId)
         {
-            var credentials = credentialService.GetCredentialsByCredentialId(credentialId);
+            var credentials = _credentialService.GetCredentialsByCredentialId(credentialId);
 
-            return Task.FromResult(!(credentials.Count > 0));
+            return (credentials.Count <= 0);
         }
 
-        public Task<bool> IsUserHandleOwnerOfCredentialId(byte[] credentialId, byte[] userHandle)
+        public async Task<bool> IsUserHandleOwnerOfCredentialId(byte[] credentialId, byte[] userHandle)
         {
-            var credentials = credentialService.GetCredentialsByUserHandle(userHandle);
+            var credentials = _credentialService.GetCredentialsByUserHandle(userHandle);
 
             if (credentials == null || credentials.Count == 0)
-                return Task.FromResult(false);
+                return false;
 
             List<PublicKeyCredentialDescriptor> storedCredential = BuildPublicKeyCredentialDescriptors(credentials);
 
-            //return storedCredential.Exists(credential => credential.Id.SequenceEqual(credentialId));
-            return Task.FromResult(true);
+            return storedCredential.Exists(credential => credential.Id.SequenceEqual(credentialId));
         }
 
         public void UpdateCounter(byte[] credentialId, uint counter)
         {
-            var credential = credentialService.GetCredentialsByCredentialId(credentialId).FirstOrDefault();
+            var credential = _credentialService.GetCredentialsByCredentialId(credentialId).FirstOrDefault();
 
-            credential.SignatureCounter = counter;
+            credential.SignCount = counter;
 
-            credentialService.UpdateCredential(credential);
+            _credentialService.UpdateCredential(credential);
         }
 
         #endregion
