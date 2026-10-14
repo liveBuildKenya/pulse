@@ -28,7 +28,7 @@ namespace Pulse.WebAuthn.Domain.Migrations
                 .WithColumn(nameof(Credential.SignCount))
                     .AsInt64()
                 .WithColumn(nameof(Credential.Transports))
-                    .AsString()
+                    .AsCustom("TEXT[]")
                 .WithColumn(nameof(Credential.IsBackupEligible))
                     .AsBoolean()
                 .WithColumn(nameof(Credential.IsBackedUp))
@@ -44,7 +44,7 @@ namespace Pulse.WebAuthn.Domain.Migrations
                 .WithColumn(nameof(Credential.AttestationFormat))
                     .AsString()
                 .WithColumn(nameof(Credential.RegDate))
-                    .AsDateTime2()
+                    .AsDateTimeOffset()
                 .WithColumn(nameof(Credential.AaGuid))
                     .AsGuid()
                 .WithTimestamp();

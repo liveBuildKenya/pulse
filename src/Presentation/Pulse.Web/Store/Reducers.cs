@@ -44,10 +44,20 @@ namespace Pulse.Web.Store
         [ReducerMethod]
         public static WebAuthnState ReduceFetchWebAuthnAssertionOptionsResultAction(WebAuthnState webAuthenticationState, FetchWebAuthnAssertionOptionsResultAction fetchWebAuthnAssertionOptionsResultAction)
         {
+            var stages = webAuthenticationState.WebAuthnStage.ToList();
+
+            var index = stages.FindIndex(
+                x => x.Key == fetchWebAuthnAssertionOptionsResultAction.WebAuthnStageModel.Key);
+
+            if (index >= 0)
+                stages[index] = fetchWebAuthnAssertionOptionsResultAction.WebAuthnStageModel;
+            else
+                stages.Add(fetchWebAuthnAssertionOptionsResultAction.WebAuthnStageModel);
+
             return webAuthenticationState with
             {
                 IsLoading = false,
-                WebAuthnStage = [.. webAuthenticationState.WebAuthnStage, fetchWebAuthnAssertionOptionsResultAction.WebAuthnStageModel],
+                WebAuthnStage = [.. stages]
             };
         }
 
@@ -68,10 +78,78 @@ namespace Pulse.Web.Store
         [ReducerMethod]
         public static WebAuthnState ReduceFetchWebAuthnAssertionResultAction(WebAuthnState webAuthenticationState, FetchWebAuthnAssertionResultAction fetchWebAuthnAssertionOptionsResultAction)
         {
+            var stages = webAuthenticationState.WebAuthnStage.ToList();
+
+            var index = stages.FindIndex(
+                x => x.Key == fetchWebAuthnAssertionOptionsResultAction.WebAuthnStageModel.Key);
+
+            if (index >= 0)
+                stages[index] = fetchWebAuthnAssertionOptionsResultAction.WebAuthnStageModel;
+            else
+                stages.Add(fetchWebAuthnAssertionOptionsResultAction.WebAuthnStageModel);
+
             return webAuthenticationState with
             {
                 IsLoading = false,
-                WebAuthnStage = [.. webAuthenticationState.WebAuthnStage, fetchWebAuthnAssertionOptionsResultAction.WebAuthnStageModel],
+                WebAuthnStage = [.. stages]
+            };
+        }
+
+        #endregion
+
+        #region WebAuthn Attestation Options
+
+        [ReducerMethod(typeof(FetchWebAuthnAttestationOptionsAction))]
+        public static WebAuthnState ReduceFecthWebAuthnAttestationOptionsAction(WebAuthnState webAuthenticationState)
+        {
+            return webAuthenticationState with
+            {
+                IsLoading = true,
+                WebAuthnStage = webAuthenticationState.WebAuthnStage
+            };
+        }
+
+        [ReducerMethod]
+        public static WebAuthnState ReduceFecthWebAuthnAttestationOptionsActionResultAction(WebAuthnState webAuthenticationState, FetchWebAuthnAttestationOptionsResultAction fetchWebAuthnAttestationOptionsResultAction)
+        {
+            var stages = webAuthenticationState.WebAuthnStage.ToList();
+
+            var index = stages.FindIndex(
+                x => x.Key == fetchWebAuthnAttestationOptionsResultAction.WebAuthnStageModel.Key);
+
+            if (index >= 0)
+                stages[index] = fetchWebAuthnAttestationOptionsResultAction.WebAuthnStageModel;
+            else
+                stages.Add(fetchWebAuthnAttestationOptionsResultAction.WebAuthnStageModel);
+
+            return webAuthenticationState with
+            {
+                IsLoading = false,
+                WebAuthnStage = [.. stages]
+            };
+        }
+
+        #endregion
+
+        #region WebAuthn Attestation
+
+        [ReducerMethod(typeof(FetchWebAuthnAttestationAction))]
+        public static WebAuthnState ReduceFetchWebAuthnAttestationAction(WebAuthnState webAuthenticationState)
+        {
+            return webAuthenticationState with
+            {
+                IsLoading = true,
+                WebAuthnStage = webAuthenticationState.WebAuthnStage
+            };
+        }
+
+        [ReducerMethod]
+        public static WebAuthnState ReduceFetchWebAuthnAttestationResultAction(WebAuthnState webAuthenticationState, FetchWebAuthnAttestationResultAction fetchWebAuthnAttestationResultAction)
+        {
+            return webAuthenticationState with
+            {
+                IsLoading = false,
+                WebAuthnStage = [.. webAuthenticationState.WebAuthnStage, fetchWebAuthnAttestationResultAction.WebAuthnStageModel],
             };
         }
 

@@ -1,4 +1,5 @@
 using Fido2NetLib;
+using Fido2NetLib.Objects;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -29,12 +30,12 @@ namespace Pulse.WebApi.Attestation
                     var model = new AttestationOptionsRequestModel
                     {
                         Username = username ?? string.Empty,
-                        ResidentKeyRequirement = System.Enum.TryParse<Fido2NetLib.Objects.ResidentKeyRequirement>(residentKeyRequirement, true, out var rk) ? rk : Fido2NetLib.Objects.ResidentKeyRequirement.Preferred,
-                        UserVerificationRequirement = System.Enum.TryParse<Fido2NetLib.Objects.UserVerificationRequirement>(userVerificationRequirement, true, out var uv) ? uv : Fido2NetLib.Objects.UserVerificationRequirement.Preferred,
-                        AuthenticatorAttachment = System.Enum.TryParse<Fido2NetLib.Objects.AuthenticatorAttachment>(authenticatorAttachment, true, out var aa) ? aa : null,
-                        AttestationConveyancePreference = System.Enum.TryParse<Fido2NetLib.Objects.AttestationConveyancePreference>(attestationConveyancePreference, true, out var ac) ? ac : Fido2NetLib.Objects.AttestationConveyancePreference.None
+                        ResidentKeyRequirement = System.Enum.TryParse<ResidentKeyRequirement>(residentKeyRequirement, true, out var rk) ? rk : ResidentKeyRequirement.Preferred,
+                        UserVerificationRequirement = System.Enum.TryParse<UserVerificationRequirement>(userVerificationRequirement, true, out var uv) ? uv : UserVerificationRequirement.Preferred,
+                        AuthenticatorAttachment = System.Enum.TryParse<AuthenticatorAttachment>(authenticatorAttachment, true, out var aa) ? aa : null,
+                        AttestationConveyancePreference = System.Enum.TryParse<AttestationConveyancePreference>(attestationConveyancePreference, true, out var ac) ? ac : AttestationConveyancePreference.None
                     };
-                    return attestationUseCase.MakeAttestationOptions(model);
+                    return attestationUseCase.MakeAttestationOptionsAsync(model);
                 })
                 .WithTags(routeTag);
 

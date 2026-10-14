@@ -1,0 +1,28 @@
+﻿@inherits FluentDialogInstance
+@inject IDispatcher Dispatcher
+
+<FluentDialogBody>
+    <FluentTextInput Label="Email:" @bind-Value="@Email" Style="max-width: 100%;" />
+</FluentDialogBody>
+
+@code {
+
+    [Parameter]
+    public string Email { get; set; }
+
+    protected override async Task OnActionClickedAsync(bool primary)
+    {
+        if (primary)
+        {
+            var action = new FetchWebAuthnAttestationOptionsAction(Email);
+            Dispatcher.Dispatch(action);
+
+            await DialogInstance.CloseAsync();
+        }
+        else
+        {
+            await DialogInstance.CancelAsync();
+        }
+    }
+
+}

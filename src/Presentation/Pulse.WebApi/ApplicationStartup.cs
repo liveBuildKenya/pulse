@@ -73,7 +73,7 @@ namespace Pulse.WebApi
                            .AllowAnyHeader()
                            .AllowAnyMethod()
                            .AllowCredentials()
-                           .WithExposedHeaders("X-Assertion-Options-Key"));
+                           .WithExposedHeaders("X-Assertion-Options-Key", "X-Attestation-Options-Key"));
             });
         }
 

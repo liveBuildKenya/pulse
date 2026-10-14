@@ -1,11 +1,13 @@
 using Fido2NetLib;
 using Fido2NetLib.Objects;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Caching.Distributed;
 using Pulse.WebAuthn.Application.Attestation.Models;
 using Pulse.WebAuthn.Application.Credentials;
 using Pulse.WebAuthn.Application.Customers;
 using Pulse.WebAuthn.Domain.Credentials;
 using System.Text;
+using System.Text.Json;
 
 namespace Pulse.WebAuthn.Application.Attestation.Services
 {
@@ -18,8 +20,10 @@ namespace Pulse.WebAuthn.Application.Attestation.Services
 
         private readonly IFido2 fido2;
         private readonly IHttpContextAccessor httpContextAccessor;
+        private readonly IDistributedCache distributedCache;
         private readonly ICustomerFactory customerFactory;
         private readonly ICredentialFactory credentialFactory;
+        private string attestationOptionsKey = "fido2.attestationOptions.";
 
         #endregion
 
@@ -27,11 +31,13 @@ namespace Pulse.WebAuthn.Application.Attestation.Services
 
         public AttestationUseCase(IFido2 fido2,
             IHttpContextAccessor httpContextAccessor,
+            IDistributedCache distributedCache,
             ICustomerFactory customerFactory,
             ICredentialFactory credentialFactory)
         {
             this.fido2 = fido2;
             this.httpContextAccessor = httpContextAccessor;
+            this.distributedCache = distributedCache;
             this.customerFactory = customerFactory;
             this.credentialFactory = credentialFactory;
         }
@@ -45,10 +51,11 @@ namespace Pulse.WebAuthn.Application.Attestation.Services
         /// </summary>
         /// <param name="attestationOptionsRequestModel">Attestation options request model</param>
         /// <returns>Attestation options</returns>
-        public IResult MakeAttestationOptions(AttestationOptionsRequestModel attestationOptionsRequestModel)
+        public async Task<IResult> MakeAttestationOptionsAsync(AttestationOptionsRequestModel attestationOptionsRequestModel)
         {
             var created = DateTime.UtcNow;
             var username = attestationOptionsRequestModel.Username;
+            var attestationGuid = Guid.NewGuid().ToString();
 
             if (string.IsNullOrEmpty(username))
             {
@@ -108,8 +115,12 @@ namespace Pulse.WebAuthn.Application.Attestation.Services
                 }
             });
 
-            //Store the options temporarily
-            httpContextAccessor.HttpContext?.Session?.SetString("fido2.attestationOptions", options.ToString());
+            await distributedCache.SetStringAsync(attestationOptionsKey + attestationGuid, JsonSerializer.Serialize(options), new DistributedCacheEntryOptions
+            {
+                AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5)
+            });
+
+            httpContextAccessor.HttpContext.Response.Headers.TryAdd("X-Attestation-Options-Key", attestationOptionsKey + attestationGuid);
 
             return Results.Ok(options);
         }
@@ -122,7 +133,9 @@ namespace Pulse.WebAuthn.Application.Attestation.Services
         /// <returns>Attestation Result</returns>
         public async Task<IResult> MakeAttestation(AuthenticatorAttestationRawResponse authenticatorAttestationRawResponse, CancellationToken cancellationToken)
         {
-            var jsonOptions = httpContextAccessor.HttpContext?.Session?.GetString("fido2.attestationOptions");
+            var attestationOptionsKey = httpContextAccessor.HttpContext.Request.Headers["X-Attestation-Options-Key"].ToString();
+            var jsonOptions = await distributedCache.GetStringAsync(attestationOptionsKey, cancellationToken);
+
             if (string.IsNullOrEmpty(jsonOptions))
             {
                 return Results.BadRequest(new { message = "Attestation options expired or not found in session." });
@@ -139,7 +152,7 @@ namespace Pulse.WebAuthn.Application.Attestation.Services
 
             var registeredPublicKeyCredential = await fido2.MakeNewCredentialAsync(makeNewCredentialsParams, cancellationToken: cancellationToken);
 
-            var credential = credentialFactory.InsertCredential(options.User, new Credential
+            var newCredential = new Credential
             {
                 AttestationFormat = registeredPublicKeyCredential.AttestationFormat,
                 Id = registeredPublicKeyCredential.Id,
@@ -153,9 +166,11 @@ namespace Pulse.WebAuthn.Application.Attestation.Services
                 IsBackedUp = registeredPublicKeyCredential.IsBackedUp,
                 AttestationObject = registeredPublicKeyCredential.AttestationObject,
                 AttestationClientDataJson = registeredPublicKeyCredential.AttestationClientDataJson,
-            });
+            };
 
-            return Results.Ok();
+            var credential = credentialFactory.InsertCredential(options.User, newCredential);
+
+            return Results.Ok(new { AttestationGuid = credential.AaGuid, SignCount = credential.SignCount });
         }
 
         private async Task<bool> CredentialIdUniqueToUserAsync(IsCredentialIdUniqueToUserParams args, CancellationToken cancellationToken)

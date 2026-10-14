@@ -26,11 +26,11 @@ namespace Pulse.WebAuthn.Domain.Credentials.Services
 
         public List<Credential> GetCredentialsByCredentialId(byte[] credentialId)
         {
+            var cred = from credential in credentialRepository.Table
+                       where credential.Id == credentialId
+                       select credential;
 
-            return (from credential in credentialRepository.Table
-                    where credential.Id == credentialId
-                    select credential)
-                    .ToList();
+            return cred.ToList();
         }
 
         /// <summary>

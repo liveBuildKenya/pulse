@@ -2,7 +2,6 @@
 @inherits FluxorComponent
 @inject IState<WebAuthnState> WebAuthnState
 @inject IDispatcher Dispatcher
-@inject UserService UserService
 
 <FluentLayout Padding="5rem">
     <FluentStack Orientation="Orientation.Vertical" VerticalGap="3rem">
@@ -84,7 +83,7 @@
 
     private async Task Continue()
     {
-        var assertionOptionsAction = new FetchWebAuthnAssertionOptionsAction("example@example.com", "");
+        var assertionOptionsAction = new FetchWebAuthnAssertionOptionsAction();
         Dispatcher.Dispatch(assertionOptionsAction);
 
     }

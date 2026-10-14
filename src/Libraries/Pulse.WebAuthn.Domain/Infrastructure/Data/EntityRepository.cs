@@ -180,6 +180,8 @@ namespace Pulse.WebAuthn.Domain.Infrastructure.Data
 
             try
             {
+                entity.DateCreated = DateTime.UtcNow;
+                entity.DateUpdated = DateTime.UtcNow;
                 Entities.Add(entity);
                 _songaDataProvider.SaveChanges();
             }
@@ -222,6 +224,7 @@ namespace Pulse.WebAuthn.Domain.Infrastructure.Data
 
             try
             {
+                entity.DateUpdated = DateTime.UtcNow;
                 Entities.Update(entity);
                 _songaDataProvider.SaveChanges();
             }

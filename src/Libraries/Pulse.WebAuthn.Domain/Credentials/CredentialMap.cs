@@ -1,5 +1,7 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Fido2NetLib.Objects;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace Pulse.WebAuthn.Domain.Credentials
 {
@@ -13,6 +15,10 @@ namespace Pulse.WebAuthn.Domain.Credentials
             builder.ToTable(nameof(Credential));
 
             builder.HasKey(credential => credential.RegDate);
+
+            builder.Property(credential => credential.Transports)
+            .HasColumnType("text[]")
+            .HasConversion<AuthenticatorTransport[]>();
 
         }
     }

@@ -14,7 +14,7 @@ namespace Pulse.WebAuthn.Application.Attestation.Services
         /// </summary>
         /// <param name="attestationOptionsRequestModel">Attestation options request model</param>
         /// <returns>Attestation options</returns>
-        IResult MakeAttestationOptions(AttestationOptionsRequestModel attestationOptionsRequestModel);
+        Task<IResult> MakeAttestationOptionsAsync(AttestationOptionsRequestModel attestationOptionsRequestModel);
 
         /// <summary>
         /// Makes the attestation

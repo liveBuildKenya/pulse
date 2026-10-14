@@ -22,10 +22,10 @@ namespace Pulse.WebAuthn.Domain.Infrastructure.Migrations
         {
             return createTableWithColumnSyntax
                 .WithColumn("DateCreated")
-                    .AsDateTime2()
+                    .AsDateTimeOffset()
                     .NotNullable()
                 .WithColumn("DateUpdated")
-                    .AsDateTime2()
+                    .AsDateTimeOffset()
                     .NotNullable();
         }
 

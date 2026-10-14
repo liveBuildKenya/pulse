@@ -130,6 +130,8 @@ namespace Pulse.WebAuthn.Application.Assertion.Services
 
             var response = await fido2.MakeAssertionAsync(makeAssertionParams, cancellationToken);
 
+            credentialFactory.UpdateCounter(credential.descriptor.Id, response.SignCount);
+
             //TODO: Handle JWT
 
             return Results.Ok(response);

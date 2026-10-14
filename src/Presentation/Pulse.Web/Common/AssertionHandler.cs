@@ -9,19 +9,29 @@
         }
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
+            
             // 🔹 Intercept request
             if (!string.IsNullOrEmpty(_storage.AssertionKey))
             {
                 request.Headers.Add("X-Assertion-Options-Key", _storage.AssertionKey);
+            }
+            if (!string.IsNullOrEmpty(_storage.AttestationKey))
+            {
+                request.Headers.Add("X-Attestation-Options-Key", _storage.AttestationKey);
             }
 
             // Forward request down the pipeline
             var response = await base.SendAsync(request, cancellationToken);
 
             // 🔹 Intercept response
-            if (response.Headers.TryGetValues("X-Assertion-Options-Key", out var values))
+            if (response.Headers.TryGetValues("X-Assertion-Options-Key", out var assertion))
             {
-                _storage.AssertionKey = values.FirstOrDefault();
+                _storage.AssertionKey = assertion.FirstOrDefault();
+
+            }
+            if (response.Headers.TryGetValues("X-Attestation-Options-Key", out var attestation))
+            {
+                _storage.AttestationKey = attestation.FirstOrDefault();
 
             }
 
