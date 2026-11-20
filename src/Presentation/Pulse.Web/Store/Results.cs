@@ -1,5 +1,4 @@
-﻿using Fido2NetLib;
-using Pulse.Web.WebAuthentication.Models;
+﻿using Pulse.Web.WebAuthentication.Models;
 
 namespace Pulse.Web.Store
 {

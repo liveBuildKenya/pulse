@@ -1,6 +1,4 @@
-﻿using Fido2NetLib;
-
-namespace Pulse.Web.Store
+﻿namespace Pulse.Web.Store
 {
     public readonly struct FetchClientCapabilitiesAction;
     public record struct FetchWebAuthnAssertionOptionsAction(string Username = "", string UserVerification = "");

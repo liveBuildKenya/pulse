@@ -2,7 +2,6 @@
 using Fido2NetLib.Objects;
 using Pulse.Web.Common;
 using System.Net.Http.Json;
-using System.Text;
 
 namespace Pulse.Web.WebAuthentication.Services
 {
