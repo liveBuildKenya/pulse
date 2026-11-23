@@ -151,7 +151,4 @@ namespace Pulse.Web.WebAuthentication.Models
         [JsonPropertyName("userVerifyingPlatformAuthenticator")]
         public bool UserVerifyingPlatformAuthenticator { get; set; }
     }
-
-
 }
-

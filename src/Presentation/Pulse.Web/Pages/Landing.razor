@@ -1,6 +1,6 @@
 ﻿@page "/"
 @inherits FluxorComponent
-@inject IState<WebAuthnState> WebAuthnState
+@* @inject IState<WebAuthnState> WebAuthnState *@
 @inject IDispatcher Dispatcher
 
 <FluentLayout Padding="5rem">
@@ -16,7 +16,7 @@
             <FluentStack Orientation="Orientation.Vertical" VerticalGap="2rem">
                 <FluentStack Orientation="Orientation.Horizontal" HorizontalGap="1rem">
                     <FluentText>Your device supports: </FluentText>
-                    @if (WebAuthnState.Value.ClientCapabilitiesModel is null)
+@*                     @if (WebAuthnState.Value.ClientCapabilitiesModel is null)
                     {
                         <FluentText>Loading browser capablilities...</FluentText>
                     }
@@ -48,7 +48,7 @@
                             <FluentIcon Value="@(new Icons.Regular.Size20.PlugConnected())"
                                         Tooltip="External authenticator (e.g. security key)" />
                         }
-                    }
+                    } *@
                 </FluentStack>
                 <FluentButton Size="ButtonSize.Medium"
                               Label="Continue"
@@ -77,14 +77,19 @@
     {
         await base.OnInitializedAsync();
 
-        var action = new FetchClientCapabilitiesAction();
+        var action = new PulseAction
+        {
+            ActionType = ApplicationActionType.Command,
+            Name = "WebAuthn.FetchClientCapabilities",
+        };
+
         Dispatcher.Dispatch(action);
     }
 
     private async Task Continue()
     {
-        var assertionOptionsAction = new FetchWebAuthnAssertionOptionsAction();
-        Dispatcher.Dispatch(assertionOptionsAction);
+        //var assertionOptionsAction = new FetchWebAuthnAssertionOptionsAction();
+        //Dispatcher.Dispatch(assertionOptionsAction);
 
     }
 }
